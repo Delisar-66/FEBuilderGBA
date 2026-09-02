@@ -209,48 +209,118 @@ namespace FEBuilderGBA.Avalonia.Views
         /// (a single clone emits hundreds of progress lines).
         /// </summary>
         async void OnImportPatch2Click(object? sender, RoutedEventArgs e)
-{
-    ImportPatch2Button.IsEnabled = false;
-
-    try
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-        var storage = topLevel?.StorageProvider;
-
-        if (storage == null || !storage.CanPickFolder)
         {
-            StatusMessageLabel.Text =
-                "Folder selection is not supported on this platform.";
-            return;
-        }
+            ImportPatch2Button.IsEnabled = false;
 
-        var folders = await storage.OpenFolderPickerAsync(
-            new FolderPickerOpenOptions
+            try
             {
-                Title = "Select the extracted FE8U patch folder",
-                AllowMultiple = false
-            });
+                var topLevel = TopLevel.GetTopLevel(this);
+                var storage = topLevel?.StorageProvider;
 
-        if (folders.Count == 0)
-        {
-            StatusMessageLabel.Text = "Patch import cancelled.";
-            return;
+                if (storage == null || !storage.CanPickFolder)
+                {
+                    StatusMessageLabel.Text =
+                    "Folder selection is not supported on this platform.";
+                    return;
+                }
+
+                var folders = await storage.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
+                {    
+                    Title = "Select the extracted FE8U patch folder",
+                    AllowMultiple = false
+                });
+
+                if (folders.Count == 0)
+                {
+                    StatusMessageLabel.Text = "Patch import cancelled.";
+                    return;
+                }
+
+                IStorageFolder source = folders[0];
+
+                    if (!string.Equals(
+                        source.Name,
+                        "FE8U",
+                        StringComparison.OrdinalIgnoreCase))
+                        {
+                            StatusMessageLabel.Text =
+                            "Please select the FE8U folder inside the extracted patch database.";
+                            return;
+                        }
+
+                string baseDir =
+                    CoreState.BaseDirectory ??
+                    AppDomain.CurrentDomain.BaseDirectory;
+
+                string patch2Root = Path.Combine(
+                    baseDir,
+                    "config",
+                    "patch2");
+
+                string staging = Path.Combine(
+                    patch2Root,
+                    "FE8U.importing");
+
+                Directory.CreateDirectory(patch2Root);
+
+                if (Directory.Exists(staging))
+                {
+                    Directory.Delete(staging, true);
+                }
+
+                StatusMessageLabel.Text =
+                    "Copying FE8U patch database...";
+
+                int copiedFiles =
+                    await CopyStorageFolderAsync(source, staging);
+
+                StatusMessageLabel.Text =
+                    $"Test copy complete: {copiedFiles} files copied.";
+            }
+            catch (Exception ex)
+            {
+                Log.Error("PatchManagerView", ex.ToString());
+                StatusMessageLabel.Text =
+                "Patch folder selection failed: " + ex.Message;
+            }
+            finally
+            {
+            ImportPatch2Button.IsEnabled = true;
+            }
         }
 
-        StatusMessageLabel.Text =
-            $"Selected folder: {folders[0].Name}";
-    }
-    catch (Exception ex)
-    {
-        Log.Error("PatchManagerView", ex.ToString());
-        StatusMessageLabel.Text =
-            "Patch folder selection failed: " + ex.Message;
-    }
-    finally
-    {
-        ImportPatch2Button.IsEnabled = true;
-    }
-}
+        static async Task<int> CopyStorageFolderAsync(
+            IStorageFolder source,
+            string destination)
+            {
+                int copiedFiles = 0;
+
+                Directory.CreateDirectory(destination);
+
+                await foreach (IStorageItem item in source.GetItemsAsync())
+                {
+                    string targetPath = Path.Combine(destination, item.Name);
+
+                    if (item is IStorageFolder folder)
+                    {
+                        copiedFiles += await CopyStorageFolderAsync(
+                        folder,
+                        targetPath);
+                    }
+                else if (item is IStorageFile file)
+                {
+                    await using Stream input = await file.OpenReadAsync();
+                    await using FileStream output = File.Create(targetPath);
+
+                    await input.CopyToAsync(output);
+
+                    copiedFiles++;
+                }
+            }
+
+            return copiedFiles;
+        }    
         async void OnInitUpdatePatch2Click(object? sender, RoutedEventArgs e)
         {
             InitUpdatePatch2Button.IsEnabled = false;   // synchronous re-entrancy guard
