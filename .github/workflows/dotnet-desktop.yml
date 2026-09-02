@@ -1,0 +1,48 @@
+name: Android Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  android-debug:
+    name: Build debuggable Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Init required submodules
+        run: |
+          git submodule update --init \
+            config/patch2 \
+            tools/Event-Assembler \
+            tools/ColorzCore \
+            resources/fe-info
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Build Debug APK
+        run: |
+          dotnet build FEBuilderGBA.Android/FEBuilderGBA.Android.csproj \
+            -c Debug \
+            -p:EnableAndroidTarget=true \
+            -p:EmbedAssembliesIntoApk=true
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: febuildergba-android-debug
+          path: FEBuilderGBA.Android/bin/Debug/net10.0-android/*.apk
+          if-no-files-found: error
