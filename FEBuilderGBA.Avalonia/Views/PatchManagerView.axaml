@@ -4,7 +4,7 @@
              x:Class="FEBuilderGBA.Avalonia.Views.PatchManagerView">
   <Grid ColumnDefinitions="400,*" Margin="8">
     <!-- Left panel: search + patch list -->
-    <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*" Margin="0,0,4,0">
+    <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,0,4,0">
       <!-- Search box -->
       <TextBox AutomationProperties.AutomationId="PatchManager_Search_Input" Grid.Row="0" Name="SearchBox" Watermark="Filter patches by name, tag, or author..."
                Margin="0,0,0,4" />
@@ -18,9 +18,16 @@
       <Button AutomationProperties.AutomationId="PatchManager_InitUpdatePatch2_Button" Grid.Row="2" Name="InitUpdatePatch2Button"
               Content="Initialize Patch Database" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
               Margin="0,0,0,4" />
+      <Button AutomationProperties.AutomationId="PatchManager_ImportPatch2_Button"
+        Grid.Row="3"
+        Name="ImportPatch2Button"
+        Content="Import FE8U Patch Folder"
+        HorizontalAlignment="Stretch"
+        HorizontalContentAlignment="Center"
+        Margin="0,0,0,4" />
 
       <!-- Patch list -->
-      <ListBox AutomationProperties.AutomationId="PatchManager_PatchList_List" Grid.Row="3" Name="PatchListBox" SelectionMode="Single">
+      <ListBox AutomationProperties.AutomationId="PatchManager_PatchList_List" Grid.Row="4" Name="PatchListBox" SelectionMode="Single">
         <ListBox.ItemTemplate>
           <DataTemplate DataType="vm:PatchEntry">
             <Grid ColumnDefinitions="*,Auto" Margin="2">
