@@ -19,10 +19,22 @@ namespace FEBuilderGBA.Core.Tests
         public void MakeWeaponTypeList_ReturnsExpectedEntries()
         {
             var list = ComboResourceHelper.MakeWeaponTypeList();
-            Assert.Equal(9, list.Count);
-            Assert.Contains("Sword", list[0].name);
-            Assert.Contains("Staff", list[4].name);
-        }
+
+            Assert.Equal(13, list.Count);
+
+            Assert.Equal((uint)0x00, list[0].id);
+            Assert.Equal((uint)0x01, list[1].id);
+            Assert.Equal((uint)0x02, list[2].id);
+            Assert.Equal((uint)0x03, list[3].id);
+            Assert.Equal((uint)0x04, list[4].id);
+            Assert.Equal((uint)0x05, list[5].id);
+            Assert.Equal((uint)0x06, list[6].id);
+            Assert.Equal((uint)0x07, list[7].id);
+            Assert.Equal((uint)0x09, list[8].id);
+            Assert.Equal((uint)0x0B, list[9].id);
+            Assert.Equal((uint)0x0C, list[10].id);
+            Assert.Equal((uint)0x11, list[11].id);
+            Assert.Equal((uint)0x12, list[12].id);
 
         [Fact]
         public void MakeUnitList_NoRom_ReturnsEmpty()
