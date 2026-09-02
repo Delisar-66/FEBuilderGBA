@@ -217,76 +217,49 @@ namespace FEBuilderGBA.Avalonia.Views
                 var topLevel = TopLevel.GetTopLevel(this);
                 var storage = topLevel?.StorageProvider;
 
-                if (storage == null || !storage.CanPickFolder)
+                if (storage == null || !storage.CanOpen)
                 {
                     StatusMessageLabel.Text =
-                    "Folder selection is not supported on this platform.";
+                    "File selection is not supported on this platform.";
                     return;
                 }
 
-                var folders = await storage.OpenFolderPickerAsync(
-                new FolderPickerOpenOptions
-                {    
-                    Title = "Select the extracted FE8U patch folder",
-                    AllowMultiple = false
-                });
+                var files = await storage.OpenFilePickerAsync(
+                    new FilePickerOpenOptions
+                    {
+                        Title = "Select FEBuilderGBA patch database ZIP",
+                        AllowMultiple = false,
+                        FileTypeFilter = new[]
+                        {
+                            new FilePickerFileType("ZIP archives")
+                                {
+                                    Patterns = new[] { "*.zip" },
+                                    MimeTypes = new[] { "application/zip" }
+                                }
+                        }
+                    });
 
-                if (folders.Count == 0)
+                if (files.Count == 0)
                 {
                     StatusMessageLabel.Text = "Patch import cancelled.";
                     return;
                 }
 
-                IStorageFolder source = folders[0];
-
-                    if (!string.Equals(
-                        source.Name,
-                        "FE8U",
-                        StringComparison.OrdinalIgnoreCase))
-                        {
-                            StatusMessageLabel.Text =
-                            "Please select the FE8U folder inside the extracted patch database.";
-                            return;
-                        }
-
-                string baseDir =
-                    CoreState.BaseDirectory ??
-                    AppDomain.CurrentDomain.BaseDirectory;
-
-                string patch2Root = Path.Combine(
-                    baseDir,
-                    "config",
-                    "patch2");
-
-                string staging = Path.Combine(
-                    patch2Root,
-                    "FE8U.importing");
-
-                Directory.CreateDirectory(patch2Root);
-
-                if (Directory.Exists(staging))
-                {
-                    Directory.Delete(staging, true);
-                }
+                IStorageFile source = files[0];
 
                 StatusMessageLabel.Text =
-                    "Copying FE8U patch database...";
-
-                int copiedFiles =
-                    await CopyStorageFolderAsync(source, staging);
-
-                StatusMessageLabel.Text =
-                    $"Test copy complete: {copiedFiles} files copied.";
+                    $"Selected ZIP: {source.Name}";
             }
             catch (Exception ex)
             {
                 Log.Error("PatchManagerView", ex.ToString());
+
                 StatusMessageLabel.Text =
-                "Patch folder selection failed: " + ex.Message;
+                "Patch ZIP selection failed: " + ex.Message;
             }
             finally
             {
-            ImportPatch2Button.IsEnabled = true;
+                ImportPatch2Button.IsEnabled = true;
             }
         }
 
