@@ -1,9 +1,12 @@
 using global::Avalonia;
 using System;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using global::Avalonia.Controls;
 using global::Avalonia.Interactivity;
+using global::Avalonia.Platform.Storage;
 using global::Avalonia.Threading;
 using FEBuilderGBA.Avalonia.Services;
 using FEBuilderGBA.Avalonia.ViewModels;
@@ -30,6 +33,7 @@ namespace FEBuilderGBA.Avalonia.Views
             ForceInstallButton.Click += OnForceInstallClick;
             UninstallButton.Click += OnUninstallClick;
             InitUpdatePatch2Button.Click += OnInitUpdatePatch2Click;
+            ImportPatch2Button.Click += OnImportPatch2Click;
         }
 
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -204,6 +208,49 @@ namespace FEBuilderGBA.Avalonia.Views
         /// it stuck. git progress lines are throttled to ~150 ms to avoid saturating the UI thread
         /// (a single clone emits hundreds of progress lines).
         /// </summary>
+        async void OnImportPatch2Click(object? sender, RoutedEventArgs e)
+{
+    ImportPatch2Button.IsEnabled = false;
+
+    try
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        var storage = topLevel?.StorageProvider;
+
+        if (storage == null || !storage.CanPickFolder)
+        {
+            StatusMessageLabel.Text =
+                "Folder selection is not supported on this platform.";
+            return;
+        }
+
+        var folders = await storage.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions
+            {
+                Title = "Select the extracted FE8U patch folder",
+                AllowMultiple = false
+            });
+
+        if (folders.Count == 0)
+        {
+            StatusMessageLabel.Text = "Patch import cancelled.";
+            return;
+        }
+
+        StatusMessageLabel.Text =
+            $"Selected folder: {folders[0].Name}";
+    }
+    catch (Exception ex)
+    {
+        Log.Error("PatchManagerView", ex.ToString());
+        StatusMessageLabel.Text =
+            "Patch folder selection failed: " + ex.Message;
+    }
+    finally
+    {
+        ImportPatch2Button.IsEnabled = true;
+    }
+}
         async void OnInitUpdatePatch2Click(object? sender, RoutedEventArgs e)
         {
             InitUpdatePatch2Button.IsEnabled = false;   // synchronous re-entrancy guard
