@@ -247,9 +247,36 @@ namespace FEBuilderGBA.Avalonia.Views
 
                 IStorageFile source = files[0];
 
-                StatusMessageLabel.Text =
-                    $"Selected ZIP: {source.Name}";
-            }
+                IStorageFile source = files[0];
+
+string baseDir =
+    CoreState.BaseDirectory ??
+    AppDomain.CurrentDomain.BaseDirectory;
+
+string patch2Root = Path.Combine(
+    baseDir,
+    "config",
+    "patch2");
+
+string staging = Path.Combine(
+    patch2Root,
+    "FE8U.importing");
+
+Directory.CreateDirectory(patch2Root);
+
+if (Directory.Exists(staging))
+{
+    Directory.Delete(staging, true);
+}
+
+StatusMessageLabel.Text =
+    "Extracting FE8U patch database...";
+
+int extractedFiles =
+    await ExtractFe8uFromZipAsync(source, staging);
+
+StatusMessageLabel.Text =
+    $"Test extraction complete: {extractedFiles} files extracted.";
             catch (Exception ex)
             {
                 Log.Error("PatchManagerView", ex.ToString());
@@ -263,37 +290,109 @@ namespace FEBuilderGBA.Avalonia.Views
             }
         }
 
-        static async Task<int> CopyStorageFolderAsync(
-            IStorageFolder source,
-            string destination)
+            static async Task<int> ExtractFe8uFromZipAsync(
+ IStorageFile source,
+    string destination)
+{
+    int extractedFiles = 0;
+
+    Directory.CreateDirectory(destination);
+
+    // Copy the selected ZIP into app-local temporary storage first.
+    // This avoids relying on Android's SAF stream being seekable.
+    string tempZipPath = Path.GetTempFileName();
+
+    try
+    {
+        await using (Stream input = await source.OpenReadAsync())
+        await using (FileStream tempOutput = File.Create(tempZipPath))
+        {
+            await input.CopyToAsync(tempOutput);
+        }
+
+        using ZipArchive archive =
+            ZipFile.OpenRead(tempZipPath);
+
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            string normalized =
+                entry.FullName.Replace('\\', '/');
+
+            int fe8uIndex = normalized.IndexOf(
+                "/FE8U/",
+                StringComparison.OrdinalIgnoreCase);
+
+            string relativePath;
+
+            if (fe8uIndex >= 0)
             {
-                int copiedFiles = 0;
-
-                Directory.CreateDirectory(destination);
-
-                await foreach (IStorageItem item in source.GetItemsAsync())
-                {
-                    string targetPath = Path.Combine(destination, item.Name);
-
-                    if (item is IStorageFolder folder)
-                    {
-                        copiedFiles += await CopyStorageFolderAsync(
-                        folder,
-                        targetPath);
-                    }
-                else if (item is IStorageFile file)
-                {
-                    await using Stream input = await file.OpenReadAsync();
-                    await using FileStream output = File.Create(targetPath);
-
-                    await input.CopyToAsync(output);
-
-                    copiedFiles++;
-                }
+                relativePath = normalized.Substring(
+                    fe8uIndex + "/FE8U/".Length);
+            }
+            else if (normalized.StartsWith(
+                "FE8U/",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                relativePath = normalized.Substring(
+                    "FE8U/".Length);
+            }
+            else
+            {
+                continue;
             }
 
-            return copiedFiles;
-        }    
+            if (string.IsNullOrWhiteSpace(relativePath))
+                continue;
+
+            string targetPath =
+                Path.GetFullPath(
+                    Path.Combine(destination, relativePath));
+
+            string destinationRoot =
+                Path.GetFullPath(destination) +
+                Path.DirectorySeparatorChar;
+
+            // Prevent ZIP entries from escaping the destination folder.
+            if (!targetPath.StartsWith(
+                    destinationRoot,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"Invalid ZIP entry: {entry.FullName}");
+            }
+
+            // Directory entry
+            if (string.IsNullOrEmpty(entry.Name))
+            {
+                Directory.CreateDirectory(targetPath);
+                continue;
+            }
+
+            string? parent =
+                Path.GetDirectoryName(targetPath);
+
+            if (!string.IsNullOrEmpty(parent))
+                Directory.CreateDirectory(parent);
+
+            await using Stream entryStream =
+                entry.Open();
+
+            await using FileStream output =
+                File.Create(targetPath);
+
+            await entryStream.CopyToAsync(output);
+
+            extractedFiles++;
+        }
+    }
+    finally
+    {
+        if (File.Exists(tempZipPath))
+            File.Delete(tempZipPath);
+    }
+
+    return extractedFiles;
+}        
         async void OnInitUpdatePatch2Click(object? sender, RoutedEventArgs e)
         {
             InitUpdatePatch2Button.IsEnabled = false;   // synchronous re-entrancy guard
