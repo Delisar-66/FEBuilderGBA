@@ -288,8 +288,31 @@ namespace FEBuilderGBA.Avalonia.Views
                     return;
                 }
 
+                string destination = Path.Combine(
+                    patch2Root,
+                    "FE8U");
+
+                string backup = Path.Combine(
+                    patch2Root,
+                    "FE8U.backup");
+
+                // Remove an older backup if one exists.
+                if (Directory.Exists(backup))
+                {
+                    Directory.Delete(backup, true);
+                }
+
+                // Preserve the currently installed database before replacing it.
+                if (Directory.Exists(destination))
+                {
+                    Directory.Move(destination, backup);
+                }
+
+                // Promote the validated staging folder to the live database.
+                Directory.Move(staging, destination);
+    
                 StatusMessageLabel.Text =
-                    $"Test extraction validated: {extractedFiles} files extracted.";
+                    $"Import complete: {extractedFiles} files installed. Reopen Patch Manager to refresh.";
             }
             catch (Exception ex)
             {
