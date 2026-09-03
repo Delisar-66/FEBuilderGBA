@@ -274,9 +274,23 @@ namespace FEBuilderGBA.Avalonia.Views
                 int extractedFiles =
                     await ExtractFe8uFromZipAsync(source, staging);
 
+                bool foundPatchDescriptor =
+                Directory.EnumerateFiles(
+                    staging,
+                    "PATCH_*.txt",
+                    SearchOption.AllDirectories)
+                    .Any();
+
+                if (!foundPatchDescriptor)
+                {
+                    StatusMessageLabel.Text =
+                    "Import failed: no PATCH_*.txt files were found.";
+                    return;
+                }
+
                 StatusMessageLabel.Text =
-                    $"Test extraction complete: {extractedFiles} files extracted.";
-          }
+                    $"Test extraction validated: {extractedFiles} files extracted.";
+            }
             catch (Exception ex)
             {
                 Log.Error("PatchManagerView", ex.ToString());
