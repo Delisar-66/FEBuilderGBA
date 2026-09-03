@@ -57,6 +57,7 @@ namespace FEBuilderGBA.Android
         Label = "FEBuilderGBA",
         Theme = "@style/FEBuilderTheme",
         MainLauncher = true,
+        Icon = "@drawable/febuilder_icon",
         Exported = true,
         ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
     public class MainActivity : AvaloniaMainActivity<global::FEBuilderGBA.Avalonia.App>
