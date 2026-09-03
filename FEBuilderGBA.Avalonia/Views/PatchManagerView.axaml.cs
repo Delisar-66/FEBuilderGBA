@@ -277,6 +277,7 @@ int extractedFiles =
 
 StatusMessageLabel.Text =
     $"Test extraction complete: {extractedFiles} files extracted.";
+          }
             catch (Exception ex)
             {
                 Log.Error("PatchManagerView", ex.ToString());
