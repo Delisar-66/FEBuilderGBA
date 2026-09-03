@@ -168,26 +168,38 @@ namespace FEBuilderGBA.Avalonia.Services
         // Item trait flags (unchanged — these are correct as documented)
         public static string?[] ItemTrait1 => new[]
         {
-            "Weapon",         // bit 0
-            "Magic",          // bit 1
-            "Staff",          // bit 2
-            "Unbreakable",    // bit 3
-            "Unsellable",     // bit 4
-            "Brave",          // bit 5
-            "Magic Damage",   // bit 6
-            "Uncounterable"   // bit 7
+            "Equippable",             // bit 0
+            "Attacks res(Magic)",     // bit 1
+            "Staff",                  // bit 2
+            "Unbreakable",            // bit 3
+            "Unsellable",             // bit 4
+            "Brave Effect",           // bit 5
+            "Magic Damage",           // bit 6
+            "Uncounterable"           // bit 7
         };
 
         public static string?[] ItemTrait2 => new[]
         {
-            "Reverse Tri.",   // bit 0
-            "Hammerne",       // bit 1
-            "Lock 1",         // bit 2
-            "Lock 2",         // bit 3
-            "Lock 3",         // bit 4
-            "Dragon",         // bit 5
-            "Monster",        // bit 6
-            "Bit 7"           // bit 7
+            "Reaver Effect",                    // bit 0
+            "Disable Hammerne",                 // bit 1
+            "Monster Lock",                     // bit 2
+            "Weapon Lock 1",                    // bit 3
+            "Myrmidon/Swordmaster Lock",        // bit 4
+            "Show Prf only",                    // bit 5
+            "Negate Flying Effectiveness",      // bit 6
+            "Negate Criticals"                  // bit 7
+        };
+
+        public static string?[] ItemTrait3 => new[]
+        {
+            "Unusable",                   // bit 0
+            "Negate Defenses",            // bit 1
+            "Eirika Lock",                // bit 2
+            "Ephraim Lock",               // bit 3
+            "Lyn Lock",                   // bit 4
+            "Athos Lock",                 // bit 5
+            "DoubleWeaponTriangle",        // bit 6
+            "PassiveBoosts"               // bit 7
         };
     }
 }
