@@ -21,7 +21,7 @@
       <Button AutomationProperties.AutomationId="PatchManager_ImportPatch2_Button"
         Grid.Row="3"
         Name="ImportPatch2Button"
-        Content="Import FE8U Patch Folder"
+        Content="Import Patch Database ZIP"
         HorizontalAlignment="Stretch"
         HorizontalContentAlignment="Center"
         Margin="0,0,0,4" />
