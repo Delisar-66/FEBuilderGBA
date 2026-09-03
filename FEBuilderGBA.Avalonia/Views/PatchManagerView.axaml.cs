@@ -328,8 +328,14 @@ namespace FEBuilderGBA.Avalonia.Views
                     throw;
                 }
 
-StatusMessageLabel.Text =
-    $"Import complete: {extractedFiles} files installed. Reopen Patch Manager to refresh.";
+                // The new database is live, so the old backup is no longer needed.
+                if (Directory.Exists(backup))
+                {
+                    Directory.Delete(backup, true);
+                }
+
+                StatusMessageLabel.Text =
+                    $"Import complete: {extractedFiles} files installed. Reopen Patch Manager to refresh.";
             }
             catch (Exception ex)
             {
