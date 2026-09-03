@@ -1,6 +1,7 @@
 using global::Avalonia;
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -247,36 +248,34 @@ namespace FEBuilderGBA.Avalonia.Views
 
                 IStorageFile source = files[0];
 
-                IStorageFile source = files[0];
+                string baseDir =
+                    CoreState.BaseDirectory ??
+                    AppDomain.CurrentDomain.BaseDirectory;
 
-string baseDir =
-    CoreState.BaseDirectory ??
-    AppDomain.CurrentDomain.BaseDirectory;
+                string patch2Root = Path.Combine(
+                    baseDir,
+                    "config",
+                    "patch2");
 
-string patch2Root = Path.Combine(
-    baseDir,
-    "config",
-    "patch2");
+                string staging = Path.Combine(
+                    patch2Root,
+                    "FE8U.importing");
 
-string staging = Path.Combine(
-    patch2Root,
-    "FE8U.importing");
+                Directory.CreateDirectory(patch2Root);
 
-Directory.CreateDirectory(patch2Root);
+                if (Directory.Exists(staging))
+                {
+                    Directory.Delete(staging, true);
+                }
 
-if (Directory.Exists(staging))
-{
-    Directory.Delete(staging, true);
-}
+                StatusMessageLabel.Text =
+                    "Extracting FE8U patch database...";
 
-StatusMessageLabel.Text =
-    "Extracting FE8U patch database...";
+                int extractedFiles =
+                    await ExtractFe8uFromZipAsync(source, staging);
 
-int extractedFiles =
-    await ExtractFe8uFromZipAsync(source, staging);
-
-StatusMessageLabel.Text =
-    $"Test extraction complete: {extractedFiles} files extracted.";
+                StatusMessageLabel.Text =
+                    $"Test extraction complete: {extractedFiles} files extracted.";
           }
             catch (Exception ex)
             {
