@@ -149,11 +149,11 @@
         <Grid ColumnDefinitions="140,200,20,140,200" RowDefinitions="Auto,Auto,Auto,Auto">
           <TextBlock Grid.Row="0" Grid.Column="0" Text="Icon (B29):" VerticalAlignment="Center" />
           <NumericUpDown AutomationProperties.AutomationId="ItemEditor_Icon_Input" FormatString="0" Grid.Row="0" Grid.Column="1" Name="IconBox" Minimum="0" Maximum="255" />
-          <TextBlock Grid.Row="0" Grid.Column="3" Text="Use Effect (B30):" VerticalAlignment="Center"
+          <TextBlock Grid.Row="0" Grid.Column="3" Text="When Used (B30):" VerticalAlignment="Center"
                      ToolTip.Tip="Effect when using the item" />
           <NumericUpDown AutomationProperties.AutomationId="ItemEditor_UsageEffect_Input" FormatString="0" Grid.Row="0" Grid.Column="4" Name="UsageEffectBox" Minimum="0" Maximum="255" />
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="Dmg Effect (B31):" VerticalAlignment="Center"
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Additional Damage Type (B31):" VerticalAlignment="Center"
                      ToolTip.Tip="Special effect applied on hit" />
           <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="4">
             <NumericUpDown AutomationProperties.AutomationId="ItemEditor_DamageEffect_Input" FormatString="0" Name="DamageEffectBox" Minimum="0" Maximum="255" Width="100" />
