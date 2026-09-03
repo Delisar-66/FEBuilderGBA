@@ -35,6 +35,7 @@ namespace FEBuilderGBA.Avalonia.Views
             // Set trait flag names
             Trait1Flags.SetBitNames(AbilityFlagNames.ItemTrait1);
             Trait2Flags.SetBitNames(AbilityFlagNames.ItemTrait2);
+            Trait3Flags.SetBitNames(AbilityFlagNames.ItemTrait3);
 
             // Wire desc text live updates
             DescIdBox.ValueChanged += OnDescIdChanged;
