@@ -302,17 +302,34 @@ namespace FEBuilderGBA.Avalonia.Views
                     Directory.Delete(backup, true);
                 }
 
+                bool hadExistingDatabase = Directory.Exists(destination);
+
                 // Preserve the currently installed database before replacing it.
-                if (Directory.Exists(destination))
+                if (hadExistingDatabase)
                 {
                     Directory.Move(destination, backup);
                 }
 
-                // Promote the validated staging folder to the live database.
-                Directory.Move(staging, destination);
-    
-                StatusMessageLabel.Text =
-                    $"Import complete: {extractedFiles} files installed. Reopen Patch Manager to refresh.";
+                try    
+                {
+                    // Promote the validated staging folder to the live database.
+                    Directory.Move(staging, destination);
+                }
+                catch
+                {
+                    // If promotion fails, restore the previous working database.
+                    if (hadExistingDatabase &&
+                        Directory.Exists(backup) &&
+                        !Directory.Exists(destination))
+                    {
+                        Directory.Move(backup, destination);
+                    }
+
+                    throw;
+                }
+
+StatusMessageLabel.Text =
+    $"Import complete: {extractedFiles} files installed. Reopen Patch Manager to refresh.";
             }
             catch (Exception ex)
             {
