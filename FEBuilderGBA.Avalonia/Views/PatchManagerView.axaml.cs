@@ -203,11 +203,9 @@ namespace FEBuilderGBA.Avalonia.Views
         }
 
         /// <summary>
-        /// #1817: in-app patch2 Initialize (clone) / Update (fetch+reset), the Avalonia half of #1812.
-        /// Runs <see cref="Patch2GitService.InitializeOrUpdate"/> off the UI thread; the button is
-        /// disabled synchronously on click and re-enabled in a finally so a mid-run exception can't leave
-        /// it stuck. git progress lines are throttled to ~150 ms to avoid saturating the UI thread
-        /// (a single clone emits hundreds of progress lines).
+        /// Imports the FE8U patch database from a user-selected ZIP archive.
+        /// The archive is extracted to a staging directory, validated for FEBuilder
+        /// patch descriptors, then safely promoted to config/patch2/FE8U.
         /// </summary>
         async void OnImportPatch2Click(object? sender, RoutedEventArgs e)
         {
@@ -283,8 +281,13 @@ namespace FEBuilderGBA.Avalonia.Views
 
                 if (!foundPatchDescriptor)
                 {
+                    if (Directory.Exists(staging))
+                    {
+                        Directory.Delete(staging, true);
+                    }
+
                     StatusMessageLabel.Text =
-                    "Import failed: no PATCH_*.txt files were found.";
+                        "Import failed: no PATCH_*.txt files were found.";
                     return;
                 }
 
@@ -453,6 +456,13 @@ namespace FEBuilderGBA.Avalonia.Views
 
     return extractedFiles;
 }        
+        /// <summary>
+        /// #1817: in-app patch2 Initialize (clone) / Update (fetch+reset), the Avalonia half of #1812.
+        /// Runs <see cref="Patch2GitService.InitializeOrUpdate"/> off the UI thread; the button is
+        /// disabled synchronously on click and re-enabled in a finally so a mid-run exception can't leave
+        /// it stuck. git progress lines are throttled to ~150 ms to avoid saturating the UI thread
+        /// (a single clone emits hundreds of progress lines).
+        /// </summary>
         async void OnInitUpdatePatch2Click(object? sender, RoutedEventArgs e)
         {
             InitUpdatePatch2Button.IsEnabled = false;   // synchronous re-entrancy guard
