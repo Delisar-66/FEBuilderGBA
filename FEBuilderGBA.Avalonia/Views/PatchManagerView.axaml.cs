@@ -345,7 +345,7 @@ namespace FEBuilderGBA.Avalonia.Views
                 Log.Error("PatchManagerView", ex.ToString());
 
                 StatusMessageLabel.Text =
-                "Patch ZIP selection failed: " + ex.Message;
+                    "Patch database import failed: " + ex.Message;
             }
             finally
             {
