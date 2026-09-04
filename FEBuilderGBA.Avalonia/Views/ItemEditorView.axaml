@@ -146,7 +146,7 @@
         <!-- Weapon Properties -->
         <Expander AutomationProperties.AutomationId="ItemEditor_WeaponProperties_Expander" Header="Weapon Properties" IsExpanded="True" Margin="0,4,0,2">
         <Border BorderBrush="Gray" BorderThickness="1" Padding="8" CornerRadius="4">
-        <Grid ColumnDefinitions="180,240,20,140,200" RowDefinitions="Auto,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="220,240,20,140,200" RowDefinitions="Auto,Auto,Auto,Auto">
           <TextBlock Grid.Row="0" Grid.Column="0" Text="Icon (B29):" VerticalAlignment="Center" />
           <NumericUpDown AutomationProperties.AutomationId="ItemEditor_Icon_Input" FormatString="0" Grid.Row="0" Grid.Column="1" Name="IconBox" Minimum="0" Maximum="255" />
           <TextBlock Grid.Row="0" Grid.Column="3" Text="When Used (B30):" VerticalAlignment="Center"
