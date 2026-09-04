@@ -80,6 +80,9 @@ namespace FEBuilderGBA.Avalonia.Views
 
                 _whenUsedList = ComboResourceHelper.MakeWhenUsedList();
 
+                UsageEffectCombo.ItemsSource =
+                    _whenUsedList.Select(x => x.name).ToList();
+
                 // Show "Edit Skill Config" button if a skill system is installed
                 EditSkillConfigButton.IsVisible = PatchDetectionService.Instance.HasSkillSystem;
 
@@ -366,7 +369,21 @@ namespace FEBuilderGBA.Avalonia.Views
             // Weapon rank & effects
             WeaponRankBox.Value = _vm.WeaponRank;
             IconBox.Value = _vm.Icon;
-            UsageEffectBox.Value = _vm.UsageEffect;
+            int usageEffectIndex =
+                _whenUsedList.FindIndex(x => x.id == _vm.UsageEffect);
+
+            if (usageEffectIndex < 0)
+            {
+                _whenUsedList.Add(
+                    (_vm.UsageEffect, $"{_vm.UsageEffect:X2} Unknown / Raw"));
+
+                UsageEffectCombo.ItemsSource =
+                    _whenUsedList.Select(x => x.name).ToList();
+
+                usageEffectIndex = _whenUsedList.Count - 1;
+            }
+
+            UsageEffectCombo.SelectedIndex = usageEffectIndex;
             int damageEffectIndex =
                 _additionalDamageTypeList.FindIndex(x => x.id == _vm.DamageEffect);
 
@@ -459,7 +476,14 @@ namespace FEBuilderGBA.Avalonia.Views
             _vm.Price = (uint)(PriceBox.Value ?? 0);
             _vm.WeaponRank = (uint)(WeaponRankBox.Value ?? 0);
             _vm.Icon = (uint)(IconBox.Value ?? 0);
-            _vm.UsageEffect = (uint)(UsageEffectBox.Value ?? 0);
+            int usageEffectIndex = UsageEffectCombo.SelectedIndex;
+
+            if (usageEffectIndex >= 0 &&
+                usageEffectIndex < _whenUsedList.Count)
+            {
+                _vm.UsageEffect =
+                    _whenUsedList[usageEffectIndex].id;
+            }
             int damageEffectIndex = DamageEffectCombo.SelectedIndex;
 
             if (damageEffectIndex >= 0 &&
