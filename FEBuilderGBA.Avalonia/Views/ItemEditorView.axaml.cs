@@ -75,6 +75,7 @@ namespace FEBuilderGBA.Avalonia.Views
                 _weaponTypeList = ComboResourceHelper.MakeWeaponTypeList();
                 WeaponTypeCombo.ItemsSource = _weaponTypeList.Select(x => x.name).ToList();
                 _additionalDamageTypeList = ComboResourceHelper.MakeAdditionalDamageTypeList();
+                DamageEffectCombo.ItemsSource = _additionalDamageTypeList.Select(x => x.name).ToList();
 
                 // Show "Edit Skill Config" button if a skill system is installed
                 EditSkillConfigButton.IsVisible = PatchDetectionService.Instance.HasSkillSystem;
@@ -363,7 +364,21 @@ namespace FEBuilderGBA.Avalonia.Views
             WeaponRankBox.Value = _vm.WeaponRank;
             IconBox.Value = _vm.Icon;
             UsageEffectBox.Value = _vm.UsageEffect;
-            DamageEffectBox.Value = _vm.DamageEffect;
+            int damageEffectIndex =
+                _additionalDamageTypeList.FindIndex(x => x.id == _vm.DamageEffect);
+
+                if (damageEffectIndex < 0)
+                {
+                    _additionalDamageTypeList.Add(
+                        (_vm.DamageEffect, $"{_vm.DamageEffect:X2} Unknown / Raw"));
+
+                    DamageEffectCombo.ItemsSource =
+                        _additionalDamageTypeList.Select(x => x.name).ToList();
+
+                    damageEffectIndex = _additionalDamageTypeList.Count - 1;
+                }
+
+                DamageEffectCombo.SelectedIndex = damageEffectIndex;
             WeaponExpBox.Value = _vm.WeaponExp;
 
             // Extension bytes
@@ -442,7 +457,14 @@ namespace FEBuilderGBA.Avalonia.Views
             _vm.WeaponRank = (uint)(WeaponRankBox.Value ?? 0);
             _vm.Icon = (uint)(IconBox.Value ?? 0);
             _vm.UsageEffect = (uint)(UsageEffectBox.Value ?? 0);
-            _vm.DamageEffect = (uint)(DamageEffectBox.Value ?? 0);
+            int damageEffectIndex = DamageEffectCombo.SelectedIndex;
+
+            if (damageEffectIndex >= 0 &&
+                damageEffectIndex < _additionalDamageTypeList.Count)
+            {
+                _vm.DamageEffect =
+                _additionalDamageTypeList[damageEffectIndex].id;
+            }
             _vm.WeaponExp = (uint)(WeaponExpBox.Value ?? 0);
             _vm.Unk33 = (uint)(Unk33Box.Value ?? 0);
             _vm.Unk34 = (uint)(Unk34Box.Value ?? 0);
