@@ -100,6 +100,23 @@ namespace FEBuilderGBA.Avalonia.Services
             };
         }
 
+        public static List<(uint id, string name)> MakeAdditionalDamageTypeList()
+        {
+            return new List<(uint id, string name)>
+            {
+                (0x00, "00 None"),
+                (0x01, "01 Poison Effect"),
+                (0x02, "02 Nosferatu Effect"),
+                (0x03, "03 Eclipse Effect"),
+                (0x04, "04 Devil Effect"),
+                (0x05, "05 Inflicts Stone"),
+                (0x06, "06 Sleep"),
+                (0x07, "07 Berserk"),
+                (0x08, "08 Silence"),
+            };
+        }
+
+        
         /// <summary>
         /// Resolve a ROMFEINFO pointer address to a ROM offset.
         /// Mirrors StructExportCore.ResolvePointer.
