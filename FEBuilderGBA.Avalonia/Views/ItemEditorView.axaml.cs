@@ -74,8 +74,11 @@ namespace FEBuilderGBA.Avalonia.Views
                 // Populate combo dropdowns BEFORE SetItems (fixes #52).
                 _weaponTypeList = ComboResourceHelper.MakeWeaponTypeList();
                 WeaponTypeCombo.ItemsSource = _weaponTypeList.Select(x => x.name).ToList();
+
                 _additionalDamageTypeList = ComboResourceHelper.MakeAdditionalDamageTypeList();
                 DamageEffectCombo.ItemsSource = _additionalDamageTypeList.Select(x => x.name).ToList();
+
+                _whenUsedList = ComboResourceHelper.MakeWhenUsedList();
 
                 // Show "Edit Skill Config" button if a skill system is installed
                 EditSkillConfigButton.IsVisible = PatchDetectionService.Instance.HasSkillSystem;
