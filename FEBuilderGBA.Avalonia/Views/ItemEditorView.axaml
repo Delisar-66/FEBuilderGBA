@@ -151,7 +151,7 @@
           <NumericUpDown AutomationProperties.AutomationId="ItemEditor_Icon_Input" FormatString="0" Grid.Row="0" Grid.Column="1" Name="IconBox" Minimum="0" Maximum="255" />
           <TextBlock Grid.Row="0" Grid.Column="3" Text="When Used (B30):" VerticalAlignment="Center"
                      ToolTip.Tip="Effect when using the item" />
-          <NumericUpDown AutomationProperties.AutomationId="ItemEditor_UsageEffect_Input" FormatString="0" Grid.Row="0" Grid.Column="4" Name="UsageEffectBox" Minimum="0" Maximum="255" />
+          <ComboBox AutomationProperties.AutomationId="ItemEditor_UsageEffect_Input" Grid.Row="0" Grid.Column="4" Name="UsageEffectCombo" HorizontalAlignment="Stretch" />
 
           <TextBlock Grid.Row="1" Grid.Column="0" Text="Additional Damage Type (B31):" VerticalAlignment="Center"
                      ToolTip.Tip="Special effect applied on hit" />
