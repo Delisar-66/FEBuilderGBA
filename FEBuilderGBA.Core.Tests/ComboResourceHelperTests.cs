@@ -16,26 +16,31 @@ namespace FEBuilderGBA.Core.Tests
         }
 
         [Fact]
-        public void MakeWeaponTypeList_ReturnsExpectedEntries()
+       public void MakeWeaponTypeList_ReturnsCanonicalSparseEntries()
         {
             var list = ComboResourceHelper.MakeWeaponTypeList();
 
-            Assert.Equal(13, list.Count);
+            uint[] expectedIds =
+        {
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+            0x07, 0x09, 0x0B, 0x0C, 0x11, 0x12,
+        };
 
-            Assert.Equal((uint)0x00, list[0].id);
-            Assert.Equal((uint)0x01, list[1].id);
-            Assert.Equal((uint)0x02, list[2].id);
-            Assert.Equal((uint)0x03, list[3].id);
-            Assert.Equal((uint)0x04, list[4].id);
-            Assert.Equal((uint)0x05, list[5].id);
-            Assert.Equal((uint)0x06, list[6].id);
-            Assert.Equal((uint)0x07, list[7].id);
-            Assert.Equal((uint)0x09, list[8].id);
-            Assert.Equal((uint)0x0B, list[9].id);
-            Assert.Equal((uint)0x0C, list[10].id);
-            Assert.Equal((uint)0x11, list[11].id);
-            Assert.Equal((uint)0x12, list[12].id);
+        Assert.Equal(expectedIds, list.Select(x => x.id));
 
+        Assert.All(list, entry =>
+            Assert.StartsWith($"{U.ToHexString(entry.id)} ", entry.name));
+        }
+        [Fact]
+        public void MakeWeaponTypeList_IncludesUnknownCurrentId()
+        {
+            var list = ComboResourceHelper.MakeWeaponTypeList(0x08);
+
+            Assert.Equal(14, list.Count);
+            Assert.Equal(0x08u, list[^1].id);
+            Assert.StartsWith("08 ", list[^1].name);
+        }
+        
         [Fact]
         public void MakeUnitList_NoRom_ReturnsEmpty()
         {
