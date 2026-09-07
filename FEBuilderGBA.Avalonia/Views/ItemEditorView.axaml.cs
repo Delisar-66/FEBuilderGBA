@@ -324,6 +324,36 @@ namespace FEBuilderGBA.Avalonia.Views
         // Mirrors WF `J_33_Click`. Visible only when a SkillSystem patch is
         // installed; opens Patch Manager filtered on the WeaponDebuffsTable
         // definition.
+        
+        // B11 normally contains Trait 4 bit flags.
+        // With the Vennou WeaponLockArray patch installed, B11 is an array index.
+        void UpdateTrait4Editor()
+        {
+            try
+            {
+                bool useWeaponLockArray =
+                    PatchDetectionService.Instance.VennouWeaponLock;
+
+                Trait4BitFlagPanel.IsVisible = !useWeaponLockArray;
+                WeaponLockArrayPanel.IsVisible = useWeaponLockArray;
+
+                if (useWeaponLockArray)
+                {
+                    WeaponLockArrayIndexBox.Value = _vm.Trait4;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorF(
+                    "ItemEditorView.UpdateTrait4Editor failed: {0}",
+                    ex.Message);
+
+                // Fall back to the standard Trait 4 editor.
+                Trait4BitFlagPanel.IsVisible = true;
+                WeaponLockArrayPanel.IsVisible = false;
+            }
+        }
+       
         void UpdateWeaponDebuffsLink()
         {
             try
@@ -392,6 +422,8 @@ namespace FEBuilderGBA.Avalonia.Views
             Trait2HexLabel.Text = $"= 0x{_vm.Trait2:X02}";
             Trait3HexLabel.Text = $"= 0x{_vm.Trait3:X02}";
             Trait4HexLabel.Text = $"= 0x{_vm.Trait4:X02}";
+
+            UpdateTrait4Editor();
 
             // Pointers
             StatBonusesPtrBox.Text = $"0x{_vm.StatBonusesPtr:X08}";
