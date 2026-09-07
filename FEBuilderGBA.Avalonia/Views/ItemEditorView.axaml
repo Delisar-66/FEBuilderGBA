@@ -318,17 +318,45 @@
                          Margin="0,2"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <controls:BitFlagPanel AutomationProperties.AutomationId="ItemEditor_Trait3_Check" Name="Trait3Flags" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Trait 4 (B11):" FontWeight="SemiBold" Margin="0,2" />
-              <TextBlock AutomationProperties.AutomationId="ItemEditor_Trait4Hex_Label"
-                         Name="Trait4HexLabel"
-                         FontSize="11"
-                         Foreground="Gray"
-                         Margin="0,2"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-            <controls:BitFlagPanel AutomationProperties.AutomationId="ItemEditor_Trait4_Check" Name="Trait4Flags" />
+            <controls:BitFlagPanel AutomationProperties.AutomationId="ItemEditor_Trait3_Check" 
+                  Name="Trait3Flags" />
+            <!-- B11 normally contains Trait 4 bit flags.  When the Vennou
+              WeaponLockArray patch is installed, B11 is instead an array index. -->
+            <StackPanel Name="Trait4BitFlagPanel" Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Trait 4 (B11):" 
+                  FontWeight="SemiBold" 
+                  Margin="0,2" />
+                <TextBlock AutomationProperties.AutomationId="ItemEditor_Trait4Hex_Label"
+                   Name="Trait4HexLabel"
+                   FontSize="11"
+                   Foreground="Gray"
+                   Margin="0,2"
+                   VerticalAlignment="Center" />
+              </StackPanel>
+
+              <controls:BitFlagPanel
+                AutomationProperties.AutomationId="ItemEditor_Trait4_Check"
+                Name="Trait4Flags" />
+              </StackPanel>    
+
+            <!-- Alternate B11 editor used by the Vennou WeaponLockArray patch. -->
+            <StackPanel Name="WeaponLockArrayPanel"
+                IsVisible="False"
+                Spacing="4">
+              <TextBlock Text="WeaponLockArray (B11):"
+                 FontWeight="SemiBold"
+                 Margin="0,2" />
+
+            <NumericUpDown
+                AutomationProperties.AutomationId="ItemEditor_WeaponLockArray_Input"
+                Name="WeaponLockArrayIndexBox"
+                FormatString="0"
+                Minimum="0"
+                Maximum="255"
+                Width="100"
+                HorizontalAlignment="Left" />
+          </StackPanel>
           </StackPanel>
         </Border>
         </Expander>
