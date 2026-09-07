@@ -52,20 +52,62 @@ namespace FEBuilderGBA.Avalonia.Views
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
+            CoreState.LanguageChanged -= OnLanguageChanged;
             base.OnDetachedFromVisualTree(e);
-            CoreState.LanguageChanged -= UpdateWeaponDebuffsLink;
         }
 
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
-            CoreState.LanguageChanged -= UpdateWeaponDebuffsLink;
-            CoreState.LanguageChanged += UpdateWeaponDebuffsLink;
+
+            CoreState.LanguageChanged -= OnLanguageChanged;
+            CoreState.LanguageChanged += OnLanguageChanged;
+
             if (!_hasLoadedList)
             {
                 _hasLoadedList = true;
                 LoadList();
             }
+            else
+            {
+                OnLanguageChanged();
+            }
+        }
+
+        void OnLanguageChanged()
+        {
+            Dispatcher.UIThread.Post(RefreshForLanguage);
+        }
+
+        void RefreshForLanguage()
+        {
+            uint selectedId = GetSelectedWeaponTypeId();
+            UpdateWeaponDebuffsLink();
+            RefreshWeaponTypeList(selectedId);
+        }
+
+        uint GetSelectedWeaponTypeId()
+        {
+            int selectedIndex = WeaponTypeCombo.SelectedIndex;
+
+            return selectedIndex >= 0 &&
+               selectedIndex < _weaponTypeList.Count
+                ? _weaponTypeList[selectedIndex].id
+                : _vm.WeaponType;
+        }
+
+        void RefreshWeaponTypeList(uint? selectedId = null)
+        {
+            _weaponTypeList =
+                ComboResourceHelper.MakeWeaponTypeList(selectedId);
+
+            WeaponTypeCombo.ItemsSource =
+                _weaponTypeList.Select(x => x.name).ToList();
+
+            WeaponTypeCombo.SelectedIndex =
+                selectedId.HasValue
+                ? _weaponTypeList.FindIndex(x => x.id == selectedId.Value)
+                : -1;
         }
 
         void LoadList()
@@ -73,8 +115,7 @@ namespace FEBuilderGBA.Avalonia.Views
             try
             {
                 // Populate combo dropdowns BEFORE SetItems (fixes #52).
-                _weaponTypeList = ComboResourceHelper.MakeWeaponTypeList();
-                WeaponTypeCombo.ItemsSource = _weaponTypeList.Select(x => x.name).ToList();
+                RefreshWeaponTypeList();
 
                 _additionalDamageTypeList = ComboResourceHelper.MakeAdditionalDamageTypeList();
                 DamageEffectCombo.ItemsSource = _additionalDamageTypeList.Select(x => x.name).ToList();
@@ -339,9 +380,7 @@ namespace FEBuilderGBA.Avalonia.Views
             // Identity
             ItemNumberBox.Value = _vm.ItemNumber;
 
-            // Weapon type combo
-            int wtIdx = _weaponTypeList.FindIndex(x => x.id == _vm.WeaponType);
-            WeaponTypeCombo.SelectedIndex = wtIdx >= 0 ? wtIdx : (int)_vm.WeaponType;
+            RefreshWeaponTypeList(_vm.WeaponType);
 
             // Trait flags (BitFlagPanel) + hex preview labels (#409 mirrors
             // WF "特性1/2/3/4" plus the raw-byte readout).
@@ -458,7 +497,11 @@ namespace FEBuilderGBA.Avalonia.Views
 
             // Weapon type from combo
             int wtIdx = WeaponTypeCombo.SelectedIndex;
-            _vm.WeaponType = wtIdx >= 0 && wtIdx < _weaponTypeList.Count ? _weaponTypeList[wtIdx].id : 0;
+
+            if (wtIdx >= 0 && wtIdx < _weaponTypeList.Count)
+            {
+                _vm.WeaponType = _weaponTypeList[wtIdx].id;
+            }
 
             // Trait flags from BitFlagPanel
             _vm.Trait1 = Trait1Flags.Value;
