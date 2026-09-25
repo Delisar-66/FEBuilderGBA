@@ -21,9 +21,16 @@ namespace FEBuilderGBA.Avalonia
     {
         /// <summary>Config key used to persist the theme preference.</summary>
         internal const string ThemeConfigKey = "Avalonia_Theme";
+        internal const string ThemeSystem = "System";
+        internal const string ThemeLight = "Light";
+        internal const string ThemeDark = "Dark";
+        internal const string ThemeMoodyBlue = "MoodyBlue";
 
-        /// <summary>Returns true when the app is currently using dark mode.</summary>
-        public bool IsDarkMode => RequestedThemeVariant == ThemeVariant.Dark;
+        /// <summary>The persisted theme choice. System follows the OS light/dark setting.</summary>
+        public string CurrentThemePreference { get; private set; } = ThemeSystem;
+
+        /// <summary>Returns true when the app is currently rendering with a dark base theme.</summary>
+        public bool IsDarkMode => ActualThemeVariant == ThemeVariant.Dark;
 
         /// <summary>ROM path passed via --rom command line argument.</summary>
         public static string? StartupRomPath { get; set; }
@@ -177,6 +184,13 @@ namespace FEBuilderGBA.Avalonia
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
+            ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
+
+        void OnActualThemeVariantChanged(object? sender, EventArgs e)
+        {
+            if (string.Equals(CurrentThemePreference, ThemeSystem, StringComparison.OrdinalIgnoreCase))
+                ApplyThemeResources(ActualThemeVariant == ThemeVariant.Dark, moodyBlue: false);
         }
 
         internal sealed record PatchDatabaseRecoveryState(PatchDatabaseImportCore.Result? Result,
@@ -655,39 +669,102 @@ namespace FEBuilderGBA.Avalonia
             };
         }
 
-        /// <summary>Toggle between light and dark mode, updating dynamic resources and persisting the choice.</summary>
+        /// <summary>Toggle between forced light and forced dark mode.</summary>
         public void ToggleTheme()
         {
-            bool switchToDark = !IsDarkMode;
-            RequestedThemeVariant = switchToDark ? ThemeVariant.Dark : ThemeVariant.Light;
-            ApplyThemeResources(switchToDark);
+            SetTheme(IsDarkMode ? ThemeLight : ThemeDark);
+        }
 
-            // Persist
-            if (CoreState.Config != null)
+        /// <summary>
+        /// Apply one of the supported app themes. System follows the operating-system
+        /// preference; MoodyBlue uses the dark Fluent base with a blue-tinted app palette.
+        /// </summary>
+        public void SetTheme(string preference, bool persist = true)
+        {
+            string normalized = preference switch
             {
-                CoreState.Config[ThemeConfigKey] = switchToDark ? "Dark" : "Light";
+                ThemeLight => ThemeLight,
+                ThemeDark => ThemeDark,
+                ThemeMoodyBlue => ThemeMoodyBlue,
+                _ => ThemeSystem,
+            };
+
+            CurrentThemePreference = normalized;
+            switch (normalized)
+            {
+                case ThemeLight:
+                    RequestedThemeVariant = ThemeVariant.Light;
+                    ApplyThemeResources(dark: false, moodyBlue: false);
+                    break;
+                case ThemeDark:
+                    RequestedThemeVariant = ThemeVariant.Dark;
+                    ApplyThemeResources(dark: true, moodyBlue: false);
+                    break;
+                case ThemeMoodyBlue:
+                    RequestedThemeVariant = ThemeVariant.Dark;
+                    ApplyThemeResources(dark: true, moodyBlue: true);
+                    break;
+                default:
+                    RequestedThemeVariant = ThemeVariant.Default;
+                    ApplyThemeResources(ActualThemeVariant == ThemeVariant.Dark, moodyBlue: false);
+                    break;
+            }
+
+            if (persist && CoreState.Config != null)
+            {
+                CoreState.Config[ThemeConfigKey] = normalized;
                 CoreState.Config.Save();
             }
         }
 
         void ApplySavedTheme()
         {
-            bool dark = false;
+            string pref = ThemeSystem;
             if (CoreState.Config != null)
-            {
-                string pref = CoreState.Config.at(ThemeConfigKey, "Light");
-                dark = string.Equals(pref, "Dark", StringComparison.OrdinalIgnoreCase);
-            }
-            RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
-            ApplyThemeResources(dark);
+                pref = CoreState.Config.at(ThemeConfigKey, ThemeSystem);
+
+            SetTheme(pref, persist: false);
         }
 
-        void ApplyThemeResources(bool dark)
+        void ApplyThemeResources(bool dark, bool moodyBlue)
         {
             if (Resources == null) return;
 
-            if (dark)
+            if (moodyBlue)
             {
+                SetBrush("AppBackgroundBrush", "#111D2B");
+                SetBrush("StatusBarBackgroundBrush", "#132236");
+                SetBrush("ToolbarBackgroundBrush", "#172A40");
+                SetBrush("ToolbarBorderBrush", "#2E4965");
+                SetBrush("SectionHeadingBrush", "#7FB4FF");
+                SetBrush("CardBorderBrush", "#365774");
+                SetBrush("InfoBannerBackgroundBrush", "#162D46");
+                SetBrush("InfoBannerBorderBrush", "#3D7EA6");
+                SetBrush("InfoBannerTextBrush", "#B8DDF7");
+                SetBrush("SubtlePanelBackgroundBrush", "#18293B");
+                SetBrush("SubtlePanelBorderBrush", "#2B465F");
+                SetBrush("WarningBackgroundBrush", "#393323");
+                SetBrush("WarningBorderBrush", "#9B7C28");
+                SetBrush("WarningTextBrush", "#E0BC62");
+                SetBrush("WarningTextSecondaryBrush", "#C9A958");
+                SetBrush("DependencyWarningBackgroundBrush", "#333128");
+                SetBrush("DependencyWarningBorderBrush", "#8B7B3A");
+                SetBrush("AccentOverlayBrush", "#334C9BE8");
+                SetBrush("ScriptCategoryButtonBrush", "#31577F");
+                SetBrush("ScriptCategoryOverlayBrush", "#304C6A88");
+                SetBrush("ErrorDialogBackgroundBrush", "#382633");
+                SetBrush("UndoInfoBackgroundBrush", "#162C44");
+                SetBrush("UndoInfoBorderBrush", "#3E6F9C");
+                SetBrush("EmulatorWarningBackgroundBrush", "#353126");
+                SetBrush("CharCodeHeaderBrush", "#315273");
+                SetBrush("CharCodeCellBrush", "#1B2D41");
+                SetBrush("WelcomeBannerBrush", "#18283D");
+                SetBrush("WelcomeBannerBorderBrush", "#294766");
+                SetBrush("DecompBadgeBrush", "#FFB15C");
+            }
+            else if (dark)
+            {
+                SetBrush("AppBackgroundBrush", "#202020");
                 SetBrush("StatusBarBackgroundBrush", "#2D2D2D");
                 SetBrush("ToolbarBackgroundBrush", "#333333");
                 SetBrush("ToolbarBorderBrush", "#444444");
@@ -719,6 +796,7 @@ namespace FEBuilderGBA.Avalonia
             }
             else
             {
+                SetBrush("AppBackgroundBrush", "#FFFFFF");
                 SetBrush("StatusBarBackgroundBrush", "#E8E8E8");
                 SetBrush("ToolbarBackgroundBrush", "#F0F0F0");
                 SetBrush("ToolbarBorderBrush", "#DDDDDD");
