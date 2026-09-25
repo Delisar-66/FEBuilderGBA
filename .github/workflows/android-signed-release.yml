@@ -2,6 +2,15 @@ name: Android Signed APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/android-themes-signing
+      - fix/android-signing-icon-followup
+      - integration/upstream-2026-09-24
+    paths:
+      - ".github/workflows/android-signed-release.yml"
+      - "FEBuilderGBA.Android/MainActivity.cs"
+      - "FEBuilderGBA.Android/Resources/drawable/febuilder_icon.png"
 
 permissions:
   contents: read
@@ -13,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Initialize required submodules
         run: |
@@ -24,12 +33,12 @@ jobs:
             resources/fe-info
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-android-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
@@ -64,6 +73,9 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "DISPLAY_VERSION=0.1.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           sed -i 's/Label = "FEBuilderGBA"/Label = "FEBuilderGBA Mat"/' FEBuilderGBA.Android/MainActivity.cs
+          grep -q '<ApplicationId>com.laqieer.febuildergba</ApplicationId>' FEBuilderGBA.Android/FEBuilderGBA.Android.csproj
+          grep -q 'Icon = "@drawable/febuilder_icon"' FEBuilderGBA.Android/MainActivity.cs
+          test -f FEBuilderGBA.Android/Resources/drawable/febuilder_icon.png
 
       - name: Publish signed APK
         env:
@@ -75,7 +87,6 @@ jobs:
             -c Release \
             -f net10.0-android \
             -p:EnableAndroidTarget=true \
-            -p:ApplicationId=com.laqieer.febuildergba.test \
             -p:ApplicationVersion="$VERSION_CODE" \
             -p:ApplicationDisplayVersion="$DISPLAY_VERSION" \
             -p:AndroidKeyStore=true \
@@ -84,6 +95,15 @@ jobs:
             -p:AndroidSigningKeyPass=env:AndroidSigningKeyPass \
             -p:AndroidSigningStorePass=env:AndroidSigningStorePass
 
+      - name: Verify packaged application identity
+        run: |
+          APK="$(find FEBuilderGBA.Android/bin/Release/net10.0-android/publish -name '*-Signed.apk' -print -quit)"
+          test -n "$APK"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -print | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          "$AAPT" dump badging "$APK" | tee "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fq "package: name='com.laqieer.febuildergba'" "$RUNNER_TEMP/apk-badging.txt"
+
       - name: Stage APK
         run: |
           mkdir -p artifacts
@@ -91,7 +111,7 @@ jobs:
             artifacts/FEBuilderGBA-Mat-Signed.apk
 
       - name: Upload signed APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: febuildergba-mat-signed-apk
           path: artifacts/FEBuilderGBA-Mat-Signed.apk
