@@ -96,7 +96,10 @@ jobs:
         run: |
           APK="$(find FEBuilderGBA.Android/bin/Release/net10.0-android/publish -name '*-Signed.apk' -print -quit)"
           test -n "$APK"
-          unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -Fxq 'com.laqieer.febuildergba'
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -print | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          "$AAPT" dump badging "$APK" | tee "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fq "package: name='com.laqieer.febuildergba'" "$RUNNER_TEMP/apk-badging.txt"
 
       - name: Stage APK
         run: |
