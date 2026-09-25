@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - feature/android-themes-signing
+      - fix/android-signing-icon-followup
+      - integration/upstream-2026-09-24
     paths:
       - ".github/workflows/android-signed-release.yml"
       - "FEBuilderGBA.Android/MainActivity.cs"
