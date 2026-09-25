@@ -2,6 +2,11 @@ name: Android Signed APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/android-themes-signing
+    paths:
+      - ".github/workflows/android-signed-release.yml"
 
 permissions:
   contents: read
@@ -65,6 +70,8 @@ jobs:
           echo "DISPLAY_VERSION=0.1.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           sed -i 's/Label = "FEBuilderGBA"/Label = "FEBuilderGBA Mat"/' FEBuilderGBA.Android/MainActivity.cs
           grep -q '<ApplicationId>com.laqieer.febuildergba</ApplicationId>' FEBuilderGBA.Android/FEBuilderGBA.Android.csproj
+          grep -q 'Icon = "@drawable/febuilder_icon"' FEBuilderGBA.Android/MainActivity.cs
+          test -f FEBuilderGBA.Android/Resources/drawable/febuilder_icon.png
 
       - name: Publish signed APK
         env:
@@ -84,6 +91,12 @@ jobs:
             -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS" \
             -p:AndroidSigningKeyPass=env:AndroidSigningKeyPass \
             -p:AndroidSigningStorePass=env:AndroidSigningStorePass
+
+      - name: Verify packaged application identity
+        run: |
+          APK="$(find FEBuilderGBA.Android/bin/Release/net10.0-android/publish -name '*-Signed.apk' -print -quit)"
+          test -n "$APK"
+          unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -Fxq 'com.laqieer.febuildergba'
 
       - name: Stage APK
         run: |
