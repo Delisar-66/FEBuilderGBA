@@ -7,6 +7,8 @@ on:
       - feature/android-themes-signing
     paths:
       - ".github/workflows/android-signed-release.yml"
+      - "FEBuilderGBA.Android/MainActivity.cs"
+      - "FEBuilderGBA.Android/Resources/drawable/febuilder_icon.png"
 
 permissions:
   contents: read
