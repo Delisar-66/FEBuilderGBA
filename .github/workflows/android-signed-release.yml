@@ -64,6 +64,7 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "DISPLAY_VERSION=0.1.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           sed -i 's/Label = "FEBuilderGBA"/Label = "FEBuilderGBA Mat"/' FEBuilderGBA.Android/MainActivity.cs
+          grep -q '<ApplicationId>com.laqieer.febuildergba</ApplicationId>' FEBuilderGBA.Android/FEBuilderGBA.Android.csproj
 
       - name: Publish signed APK
         env:
