@@ -1,0 +1,98 @@
+name: Android Signed APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-signed:
+    name: Build signed updateable APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize required submodules
+        run: |
+          git submodule update --init \
+            config/patch2 \
+            tools/Event-Assembler \
+            tools/ColorzCore \
+            resources/fe-info
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-android-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
+          restore-keys: |
+            nuget-android-${{ runner.os }}-
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Validate signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64"; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS"; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing ANDROID_KEY_PASSWORD"; exit 1; }
+          test -n "$ANDROID_STORE_PASSWORD" || { echo "Missing ANDROID_STORE_PASSWORD"; exit 1; }
+
+      - name: Restore signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/febuilder-upload.jks"
+          chmod 600 "$RUNNER_TEMP/febuilder-upload.jks"
+
+      - name: Configure application identity and version
+        run: |
+          VERSION_CODE=$((10000 + GITHUB_RUN_NUMBER))
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "DISPLAY_VERSION=0.1.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          sed -i 's/Label = "FEBuilderGBA"/Label = "FEBuilderGBA Mat"/' FEBuilderGBA.Android/MainActivity.cs
+
+      - name: Publish signed APK
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          AndroidSigningKeyPass: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          AndroidSigningStorePass: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          dotnet publish FEBuilderGBA.Android/FEBuilderGBA.Android.csproj \
+            -c Release \
+            -f net10.0-android \
+            -p:EnableAndroidTarget=true \
+            -p:ApplicationId=com.laqieer.febuildergba.test \
+            -p:ApplicationVersion="$VERSION_CODE" \
+            -p:ApplicationDisplayVersion="$DISPLAY_VERSION" \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="$RUNNER_TEMP/febuilder-upload.jks" \
+            -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS" \
+            -p:AndroidSigningKeyPass=env:AndroidSigningKeyPass \
+            -p:AndroidSigningStorePass=env:AndroidSigningStorePass
+
+      - name: Stage APK
+        run: |
+          mkdir -p artifacts
+          cp FEBuilderGBA.Android/bin/Release/net10.0-android/publish/*-Signed.apk \
+            artifacts/FEBuilderGBA-Mat-Signed.apk
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: febuildergba-mat-signed-apk
+          path: artifacts/FEBuilderGBA-Mat-Signed.apk
+          if-no-files-found: error

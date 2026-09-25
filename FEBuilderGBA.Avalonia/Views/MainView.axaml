@@ -8,7 +8,8 @@
        and Android single-view shells can load and save a ROM. The desktop
        multi-window MainWindow is unchanged; this view only exists under
        ISingleViewApplicationLifetime (WebAssembly / Android). -->
-  <Grid RowDefinitions="Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Background="{DynamicResource AppBackgroundBrush}">
     <!-- Top app bar -->
     <Border Grid.Row="0"
             Background="{DynamicResource ToolbarBackgroundBrush}"
