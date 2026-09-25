@@ -282,6 +282,26 @@ namespace FEBuilderGBA.Avalonia.Views
                 languageItem.Items.Add(child);
             }
             flyout.Items.Add(languageItem);
+
+            var themeItem = new MenuItem { Header = R._("Theme") };
+            global::Avalonia.Automation.AutomationProperties.SetAutomationId(themeItem, "Main_AndroidTheme_Button");
+            foreach (var (label, value) in new[]
+            {
+                ("System", global::FEBuilderGBA.Avalonia.App.ThemeSystem),
+                ("Light", global::FEBuilderGBA.Avalonia.App.ThemeLight),
+                ("Dark", global::FEBuilderGBA.Avalonia.App.ThemeDark),
+                ("Moody Blue", global::FEBuilderGBA.Avalonia.App.ThemeMoodyBlue),
+            })
+            {
+                var child = new MenuItem { Header = R._(label) };
+                child.Click += (_, _) =>
+                {
+                    if (global::Avalonia.Application.Current is global::FEBuilderGBA.Avalonia.App app)
+                        app.SetTheme(value);
+                };
+                themeItem.Items.Add(child);
+            }
+            flyout.Items.Add(themeItem);
             flyout.Items.Add(new Separator());
 
             foreach (var (label, url) in HomePageLinks)
