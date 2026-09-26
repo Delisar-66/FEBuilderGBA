@@ -215,7 +215,8 @@ namespace FEBuilderGBA
                 if (directiveCount == 0) return;
                 if (directiveCount != 1) throw Invalid("Multiple file directives on one event line are ambiguous.");
                 string[] quoted = QuotedOperands(incbin ?? lynText ?? lynEvent ?? png ?? line);
-                if (quoted.Length == 0) throw Invalid("Ambiguous quoted event-file operand.");
+                if (quoted.Length == 0)
+                    throw Invalid($"Ambiguous quoted event-file operand in '{source}': {line}");
                 int expected = lynText != null ? 2 : 1;
                 if (quoted.Length > expected) throw Invalid("Unexpected event-file operands.");
                 for (int i = 0; i < quoted.Length; i++)
