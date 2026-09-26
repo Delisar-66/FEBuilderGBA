@@ -222,7 +222,7 @@ namespace FEBuilderGBA
                 if (directiveCount == 0) return;
                 if (directiveCount != 1) throw Invalid("Multiple file directives on one event line are ambiguous.");
                 string operandText = incbin ?? lynText ?? lynEvent ?? png ?? line;
-                string[] operands = QuotedOperands(operandText);
+                string[] operands = QuotedOperands(operandText, source, line);
                 if (operands.Length == 0 && incbin != null)
                 {
                     string? unquoted = UnquotedIncbinOperand(incbin);
@@ -301,7 +301,7 @@ namespace FEBuilderGBA
                 edges[slot] = value;
             }
 
-            static string[] QuotedOperands(string line)
+            static string[] QuotedOperands(string line, string source, string sourceLine)
             {
                 var result = new List<string>();
                 int position = 0;
@@ -310,7 +310,7 @@ namespace FEBuilderGBA
                     int start = line.IndexOf('"', position);
                     if (start < 0) break;
                     int end = line.IndexOf('"', start + 1);
-                    if (end < 0) throw Invalid("Unclosed event filename quote.");
+                    if (end < 0) throw Invalid($"Unclosed event filename quote: source='{source}', line='{sourceLine}'.");
                     result.Add(line.Substring(start + 1, end - start - 1));
                     position = end + 1;
                 }
