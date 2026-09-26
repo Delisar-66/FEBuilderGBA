@@ -129,6 +129,27 @@ public class PatchDatabaseZipReaderCoreTests
     }
 
     [Theory]
+    [InlineData("FE6")]
+    [InlineData("FE7J")]
+    [InlineData("FE7U")]
+    [InlineData("FE8J")]
+    [InlineData("FE8U")]
+    public void SingleVersionImport_OmitsLegacyCrossVersionAllInstrumentDescriptor(string version)
+    {
+        using var zip = Zip(
+            ($"{version}/AllInstrumentEA/Patch_AllInstrument.txt",
+                "NAME=All Instruments\nTYPE=EA\nEA=../../FE7U/AllInstrumentEA/AllInstrument.event"),
+            ($"{version}/PATCH_keep.txt", "NAME=Keep\nTYPE=BIN"));
+
+        var archive = PatchDatabaseZipReaderCore.Inspect(zip, version);
+
+        var file = Assert.Single(archive.Files);
+        Assert.Equal("PATCH_keep.txt", file.RelativePath);
+        Assert.DoesNotContain(archive.Files,
+            entry => PatchDatabaseZipReaderCore.IsSingleVersionImportExcluded(entry.RelativePath));
+    }
+
+    [Theory]
     [InlineData("../FE8U/PATCH_x.txt")]
     [InlineData("/FE8U/PATCH_x.txt")]
     [InlineData("\\\\unused.invalid\\FE8U\\PATCH_x.txt")]
