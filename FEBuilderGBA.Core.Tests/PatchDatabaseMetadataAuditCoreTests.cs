@@ -397,6 +397,56 @@ public class PatchDatabaseMetadataAuditCoreTests
     }
 
     [Fact]
+    public void UnquotedIncbinSingleToken_IsAudited()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("patch/PATCH_test.txt", "TYPE=EA\nEA=main.event");
+        fixture.Put("patch/main.event", "#incbin payload.dmp");
+        fixture.PutBytes("patch/payload.dmp", new byte[] { 0x11, 0x22 });
+
+        var audit = fixture.Audit();
+
+        Assert.Contains(audit.References,
+            r => r.Source == "patch/main.event" && r.Target == "patch/payload.dmp");
+    }
+
+    [Fact]
+    public void UnquotedIncbinWithTrailingComment_IsAudited()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("patch/PATCH_test.txt", "TYPE=EA\nEA=main.event");
+        fixture.Put("patch/main.event", "#incbin payload.dmp // legacy EA syntax");
+        fixture.PutBytes("patch/payload.dmp", new byte[] { 0x11, 0x22 });
+
+        var audit = fixture.Audit();
+
+        Assert.Contains(audit.References,
+            r => r.Source == "patch/main.event" && r.Target == "patch/payload.dmp");
+    }
+
+    [Fact]
+    public void UnquotedIncbinStillRejectsVersionSubtreeEscape()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("patch/PATCH_test.txt", "TYPE=EA\nEA=main.event");
+        fixture.Put("patch/main.event", "#incbin ../../outside.dmp");
+
+        Assert.Throws<InvalidDataException>(() => fixture.Audit());
+        Assert.All(fixture.Reads, name => Assert.True(fixture.Files.ContainsKey(name)));
+    }
+
+    [Fact]
+    public void UnquotedIncbinWithAmbiguousExtraToken_IsRejected()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("patch/PATCH_test.txt", "TYPE=EA\nEA=main.event");
+        fixture.Put("patch/main.event", "#incbin payload.dmp unexpected");
+        fixture.PutBytes("patch/payload.dmp", new byte[] { 0x11, 0x22 });
+
+        Assert.Throws<InvalidDataException>(() => fixture.Audit());
+    }
+
+    [Fact]
     public void EditPatchWithoutPatchFilename_IsInTheClosure()
     {
         using var fixture = new Fixture();
