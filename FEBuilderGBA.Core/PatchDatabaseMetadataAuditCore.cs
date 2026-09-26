@@ -71,8 +71,10 @@ namespace FEBuilderGBA
             {
                 ArgumentNullException.ThrowIfNull(files);
                 this.root = Path.GetFullPath(root);
-                this.files = new Dictionary<string, (string Name, long Length)>(
-                    OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                // FEBuilder patch databases are authored for the Windows desktop app, where
+                // metadata file references are case-insensitive. Preserve that contract on Android/Linux.
+                // ZIP ingestion already rejects case-only aliases, so this cannot make two archive entries ambiguous.
+                this.files = new Dictionary<string, (string Name, long Length)>(StringComparer.OrdinalIgnoreCase);
                 this.limits = limits;
                 this.cancellation = cancellation;
                 this.readObserver = readObserver;
