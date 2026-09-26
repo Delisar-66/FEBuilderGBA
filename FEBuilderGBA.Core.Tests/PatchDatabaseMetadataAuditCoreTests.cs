@@ -412,6 +412,25 @@ public class PatchDatabaseMetadataAuditCoreTests
     }
 
     [Fact]
+    public void CommentedIncbinInPatchDescriptor_IsIgnored()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("Boss Animation ON BGON/PATCH_Boss Animation ON BGON.txt",
+            "TYPE=BIN\n" +
+            "BIN:$FREEAREA=Boss Animation ON BGON.dmp\n" +
+            "// #incbin \"Boss_Animation_ON_BGON.dmp\"");
+        fixture.PutBytes("Boss Animation ON BGON/Boss Animation ON BGON.dmp",
+            new byte[] { 0x11, 0x22 });
+
+        var audit = fixture.Audit();
+
+        Assert.Contains(audit.References,
+            r => r.Target == "Boss Animation ON BGON/Boss Animation ON BGON.dmp");
+        Assert.DoesNotContain(audit.References,
+            r => r.Target.EndsWith("Boss_Animation_ON_BGON.dmp", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void UnquotedIncbinSingleToken_IsAudited()
     {
         using var fixture = new Fixture();
