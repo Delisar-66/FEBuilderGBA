@@ -7,10 +7,13 @@ on:
       - feature/android-themes-signing
       - fix/android-signing-icon-followup
       - integration/upstream-2026-09-24
+      - fix/avalonia-b11-weaponlockarray-v2
     paths:
       - ".github/workflows/android-signed-release.yml"
       - "FEBuilderGBA.Android/MainActivity.cs"
       - "FEBuilderGBA.Android/Resources/drawable/febuilder_icon.png"
+      - "FEBuilderGBA.Avalonia/Views/ItemEditorView.axaml"
+      - "FEBuilderGBA.Avalonia/Views/ItemEditorView.axaml.cs"
 
 permissions:
   contents: read

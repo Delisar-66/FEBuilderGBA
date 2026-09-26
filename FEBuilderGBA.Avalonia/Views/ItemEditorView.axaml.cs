@@ -300,6 +300,27 @@ namespace FEBuilderGBA.Avalonia.Views
             return 0;
         }
 
+        // B11 normally contains Trait 4 bit flags. With the Vennou
+        // WeaponLockArray patch installed, B11 is an array index instead.
+        void UpdateTrait4Editor()
+        {
+            try
+            {
+                bool useWeaponLockArray = PatchDetectionService.Instance.VennouWeaponLock;
+                Trait4BitFlagPanel.IsVisible = !useWeaponLockArray;
+                WeaponLockArrayPanel.IsVisible = useWeaponLockArray;
+
+                if (useWeaponLockArray)
+                    WeaponLockArrayIndexBox.Value = _vm.Trait4;
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorF("ItemEditorView.UpdateTrait4Editor failed: {0}", ex.Message);
+                Trait4BitFlagPanel.IsVisible = true;
+                WeaponLockArrayPanel.IsVisible = false;
+            }
+        }
+
         // -- Debuff Table jump (#409) ----------------------------------------
         // Mirrors WF `J_33_Click`. Visible only when a SkillSystem patch is
         // installed; opens Patch Manager filtered on the WeaponDebuffsTable
@@ -372,6 +393,8 @@ namespace FEBuilderGBA.Avalonia.Views
             Trait2HexLabel.Text = $"= 0x{_vm.Trait2:X02}";
             Trait3HexLabel.Text = $"= 0x{_vm.Trait3:X02}";
             Trait4HexLabel.Text = $"= 0x{_vm.Trait4:X02}";
+
+            UpdateTrait4Editor();
 
             // Pointers
             StatBonusesPtrBox.Text = $"0x{_vm.StatBonusesPtr:X08}";
@@ -456,7 +479,9 @@ namespace FEBuilderGBA.Avalonia.Views
             _vm.Trait1 = Trait1Flags.Value;
             _vm.Trait2 = Trait2Flags.Value;
             _vm.Trait3 = Trait3Flags.Value;
-            _vm.Trait4 = Trait4Flags.Value;
+            _vm.Trait4 = PatchDetectionService.Instance.VennouWeaponLock
+                ? (uint)(WeaponLockArrayIndexBox.Value ?? 0)
+                : Trait4Flags.Value;
 
             _vm.StatBonusesPtr = ParseHexText(StatBonusesPtrBox.Text);
             _vm.EffectivenessPtr = ParseHexText(EffectivenessPtrBox.Text);
