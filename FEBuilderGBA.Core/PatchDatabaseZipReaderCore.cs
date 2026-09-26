@@ -80,6 +80,16 @@ namespace FEBuilderGBA
         internal static bool IsSupportedVersion(string version)
             => version is "FE6" or "FE7J" or "FE7U" or "FE8J" or "FE8U";
 
+        // The upstream patch2 tree contains one legacy descriptor that intentionally
+        // escapes its ROM-version subtree to reuse FE7U assets:
+        //   AllInstrumentEA/Patch_AllInstrument.txt
+        // Offline imports install only the loaded ROM's subtree, so keeping this
+        // descriptor would either fail validation or leave a broken patch entry.
+        // Omit it while preserving the traversal guard for all other metadata.
+        internal static bool IsSingleVersionImportExcluded(string relativePath)
+            => relativePath.Equals("AllInstrumentEA/Patch_AllInstrument.txt",
+                StringComparison.OrdinalIgnoreCase);
+
         internal static Archive Inspect(Stream source, string version, Limits? limits = null,
             CancellationToken cancellationToken = default)
         {
@@ -441,6 +451,8 @@ namespace FEBuilderGBA
                     directories.Add(entry);
                     continue;
                 }
+                if (IsSingleVersionImportExcluded(entry.RelativePath))
+                    continue;
                 total = checked(total + entry.Length);
                 if (files.Count >= limits.MaxFiles || total > limits.MaxExpandedBytes)
                     throw Invalid("Selected database file/byte limit exceeded.");
