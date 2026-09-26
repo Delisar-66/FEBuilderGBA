@@ -397,6 +397,21 @@ public class PatchDatabaseMetadataAuditCoreTests
     }
 
     [Fact]
+    public void EventFileReferences_AreCaseInsensitiveLikeDesktopFEBuilder()
+    {
+        using var fixture = new Fixture();
+        fixture.Put("AutoNewline/PATCH_AutoNewline.txt", "TYPE=EA\nEA=Installer.event");
+        fixture.Put("AutoNewline/Installer.event", "#incbin autonewlinehook.dmp");
+        fixture.PutBytes("AutoNewline/AutoNewlineHook.dmp", new byte[] { 0x11, 0x22 });
+
+        var audit = fixture.Audit();
+
+        Assert.Contains(audit.References,
+            r => r.Source == "AutoNewline/Installer.event" &&
+                 r.Target == "AutoNewline/AutoNewlineHook.dmp");
+    }
+
+    [Fact]
     public void UnquotedIncbinSingleToken_IsAudited()
     {
         using var fixture = new Fixture();
