@@ -214,14 +214,20 @@ namespace FEBuilderGBA
                     (lynEvent != null ? 1 : 0) + (png != null ? 1 : 0) + (include ? 1 : 0);
                 if (directiveCount == 0) return;
                 if (directiveCount != 1) throw Invalid("Multiple file directives on one event line are ambiguous.");
-                string[] quoted = QuotedOperands(incbin ?? lynText ?? lynEvent ?? png ?? line);
-                if (quoted.Length == 0)
+                string operandText = incbin ?? lynText ?? lynEvent ?? png ?? line;
+                string[] operands = QuotedOperands(operandText);
+                if (operands.Length == 0 && incbin != null)
+                {
+                    string? unquoted = UnquotedIncbinOperand(incbin);
+                    if (unquoted != null) operands = new[] { unquoted };
+                }
+                if (operands.Length == 0)
                     throw Invalid($"Ambiguous quoted event-file operand in '{source}': {line}");
                 int expected = lynText != null ? 2 : 1;
-                if (quoted.Length > expected) throw Invalid("Unexpected event-file operands.");
-                for (int i = 0; i < quoted.Length; i++)
+                if (operands.Length > expected) throw Invalid("Unexpected event-file operands.");
+                for (int i = 0; i < operands.Length; i++)
                 {
-                    string target = Resolve(source, quoted[i], false);
+                    string target = Resolve(source, operands[i], false);
                     Record(edges, "event:" + i, target, include, false);
                     if (incbin != null)
                     {
@@ -302,6 +308,25 @@ namespace FEBuilderGBA
                     position = end + 1;
                 }
                 return result.ToArray();
+            }
+
+            static string? UnquotedIncbinOperand(string operand)
+            {
+                if (operand.Length == 0 || operand.Contains('"')) return null;
+
+                string value = operand.Trim();
+                int whitespace = -1;
+                for (int i = 0; i < value.Length; i++)
+                {
+                    if (!char.IsWhiteSpace(value[i])) continue;
+                    whitespace = i;
+                    break;
+                }
+                if (whitespace < 0) return value;
+
+                string tail = value.Substring(whitespace).TrimStart();
+                if (!tail.StartsWith("//", StringComparison.Ordinal)) return null;
+                return value.Substring(0, whitespace);
             }
 
             string Resolve(string source, string operand, bool optional)
