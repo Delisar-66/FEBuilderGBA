@@ -360,7 +360,7 @@ namespace FEBuilderGBA
                 if (canonical != target || directory) throw Invalid("Ambiguous metadata path normalization.");
                 if (files.TryGetValue(target, out var entry)) return entry.Name;
                 if (optional) return target;
-                throw Invalid("Metadata references a file absent from the selected version subtree.");
+                throw Invalid($"Metadata references a file absent from the selected version subtree: source='{source}', operand='{operand}', resolved='{target}'.");
             }
 
             string Derived(string target, string extension, bool append)
