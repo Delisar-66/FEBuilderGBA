@@ -71,8 +71,10 @@ namespace FEBuilderGBA
             {
                 ArgumentNullException.ThrowIfNull(files);
                 this.root = Path.GetFullPath(root);
-                this.files = new Dictionary<string, (string Name, long Length)>(
-                    OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                // FEBuilder patch databases are authored for the Windows desktop app, where
+                // metadata file references are case-insensitive. Preserve that contract on Android/Linux.
+                // ZIP ingestion already rejects case-only aliases, so this cannot make two archive entries ambiguous.
+                this.files = new Dictionary<string, (string Name, long Length)>(StringComparer.OrdinalIgnoreCase);
                 this.limits = limits;
                 this.cancellation = cancellation;
                 this.readObserver = readObserver;
@@ -202,6 +204,11 @@ namespace FEBuilderGBA
 
             void AuditEventLine(string source, string line, Dictionary<string, (string Target, bool Text, bool Optional)> edges)
             {
+                // Patch descriptors and event files commonly keep legacy EA examples commented out.
+                // Match the actual consumer behavior: comments are not live file dependencies.
+                line = U.ClipComment(line).Trim();
+                if (line.Length == 0) return;
+
                 string? incbin = DirectiveOperand(line, "#incbin");
                 string? lynText = DirectiveOperand(line, "#inctext lyn");
                 string? lynEvent = DirectiveOperand(line, "#inctevent lyn");
@@ -214,13 +221,20 @@ namespace FEBuilderGBA
                     (lynEvent != null ? 1 : 0) + (png != null ? 1 : 0) + (include ? 1 : 0);
                 if (directiveCount == 0) return;
                 if (directiveCount != 1) throw Invalid("Multiple file directives on one event line are ambiguous.");
-                string[] quoted = QuotedOperands(incbin ?? lynText ?? lynEvent ?? png ?? line);
-                if (quoted.Length == 0) throw Invalid("Ambiguous quoted event-file operand.");
-                int expected = lynText != null ? 2 : 1;
-                if (quoted.Length > expected) throw Invalid("Unexpected event-file operands.");
-                for (int i = 0; i < quoted.Length; i++)
+                string operandText = incbin ?? lynText ?? lynEvent ?? png ?? line;
+                string[] operands = QuotedOperands(operandText, source, line);
+                if (operands.Length == 0 && incbin != null)
                 {
-                    string target = Resolve(source, quoted[i], false);
+                    string? unquoted = UnquotedIncbinOperand(incbin);
+                    if (unquoted != null) operands = new[] { unquoted };
+                }
+                if (operands.Length == 0)
+                    throw Invalid($"Ambiguous quoted event-file operand in '{source}': {line}");
+                int expected = lynText != null ? 2 : 1;
+                if (operands.Length > expected) throw Invalid("Unexpected event-file operands.");
+                for (int i = 0; i < operands.Length; i++)
+                {
+                    string target = Resolve(source, operands[i], false);
                     Record(edges, "event:" + i, target, include, false);
                     if (incbin != null)
                     {
@@ -287,7 +301,7 @@ namespace FEBuilderGBA
                 edges[slot] = value;
             }
 
-            static string[] QuotedOperands(string line)
+            static string[] QuotedOperands(string line, string source, string sourceLine)
             {
                 var result = new List<string>();
                 int position = 0;
@@ -296,11 +310,30 @@ namespace FEBuilderGBA
                     int start = line.IndexOf('"', position);
                     if (start < 0) break;
                     int end = line.IndexOf('"', start + 1);
-                    if (end < 0) throw Invalid("Unclosed event filename quote.");
+                    if (end < 0) throw Invalid($"Unclosed event filename quote: source='{source}', line='{sourceLine}'.");
                     result.Add(line.Substring(start + 1, end - start - 1));
                     position = end + 1;
                 }
                 return result.ToArray();
+            }
+
+            static string? UnquotedIncbinOperand(string operand)
+            {
+                if (operand.Length == 0 || operand.Contains('"')) return null;
+
+                string value = operand.Trim();
+                int whitespace = -1;
+                for (int i = 0; i < value.Length; i++)
+                {
+                    if (!char.IsWhiteSpace(value[i])) continue;
+                    whitespace = i;
+                    break;
+                }
+                if (whitespace < 0) return value;
+
+                string tail = value.Substring(whitespace).TrimStart();
+                if (!tail.StartsWith("//", StringComparison.Ordinal)) return null;
+                return value.Substring(0, whitespace);
             }
 
             string Resolve(string source, string operand, bool optional)
@@ -332,7 +365,7 @@ namespace FEBuilderGBA
                 if (canonical != target || directory) throw Invalid("Ambiguous metadata path normalization.");
                 if (files.TryGetValue(target, out var entry)) return entry.Name;
                 if (optional) return target;
-                throw Invalid("Metadata references a file absent from the selected version subtree.");
+                throw Invalid($"Metadata references a file absent from the selected version subtree: source='{source}', operand='{operand}', resolved='{target}'.");
             }
 
             string Derived(string target, string extension, bool append)
