@@ -204,6 +204,11 @@ namespace FEBuilderGBA
 
             void AuditEventLine(string source, string line, Dictionary<string, (string Target, bool Text, bool Optional)> edges)
             {
+                // Patch descriptors and event files commonly keep legacy EA examples commented out.
+                // Match the actual consumer behavior: comments are not live file dependencies.
+                line = U.ClipComment(line).Trim();
+                if (line.Length == 0) return;
+
                 string? incbin = DirectiveOperand(line, "#incbin");
                 string? lynText = DirectiveOperand(line, "#inctext lyn");
                 string? lynEvent = DirectiveOperand(line, "#inctevent lyn");
