@@ -1,0 +1,29 @@
+name: Temporary Patch DB Compatibility Test
+
+on:
+  push:
+    branches:
+      - fix/patchdb-crossversion-descriptor
+
+permissions:
+  contents: read
+
+jobs:
+  patchdb-tests:
+    name: Patch DB core tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run patch database tests
+        run: >
+          dotnet test FEBuilderGBA.Core.Tests/FEBuilderGBA.Core.Tests.csproj
+          -c Release
+          --filter "FullyQualifiedName~PatchDatabase"

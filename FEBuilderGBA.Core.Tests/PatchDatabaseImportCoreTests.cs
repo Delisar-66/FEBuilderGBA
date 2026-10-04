@@ -542,6 +542,29 @@ public class PatchDatabaseImportCoreTests
     }
 
     [Fact]
+    public async Task LegacyCrossVersionAllInstrumentDescriptorDoesNotBlockImport()
+    {
+        using var fixture = new Fixture();
+        fixture.SeedOld();
+        using var zip = Fixture.ZipDescriptors(
+            ("PATCH_test.txt", "NAME=New\nTYPE=BIN"),
+            ("AllInstrumentEA/Patch_AllInstrument.txt",
+                "NAME=All Instruments\nTYPE=EA\nEA=../../FE7U/AllInstrumentEA/AllInstrument.event"));
+
+        using (var prepared = await fixture.Prepare(zip))
+        {
+            Assert.Equal(1, prepared.FileCount);
+            var result = prepared.Commit();
+            Assert.True(result.Success, result.Message);
+        }
+
+        Assert.Contains("NAME=New", File.ReadAllText(Path.Combine(fixture.Target, "PATCH_test.txt")));
+        Assert.False(File.Exists(Path.Combine(fixture.Target,
+            "AllInstrumentEA", "Patch_AllInstrument.txt")));
+        Assert.Empty(fixture.OperationDirectories());
+    }
+
+    [Fact]
     public async Task PreparedStageWithoutOwnershipMarkerIsRefusedBeforeCommit()
     {
         using var fixture = new Fixture();
