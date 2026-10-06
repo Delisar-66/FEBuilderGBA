@@ -1,0 +1,112 @@
+name: Prune old workflow runs
+
+# Retain the three newest runs for each workflow (not three total for the repo).
+# The cleanup is independent of the APK build and works across all branches.
+on:
+  workflow_run:
+    workflows:
+      - Android Signed APK
+      - Block binary & secret files
+      - Lint PR / Commits
+      - Temporary Patch DB Compatibility Test
+    types: [completed]
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Preview deletions without removing runs
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: febuilder-workflow-run-retention
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Keep 3 runs per workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Prune older completed runs
+        uses: actions/github-script@v8
+        env:
+          DRY_RUN: ${{ inputs.dry_run == true }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const keepCount = 3;
+            const dryRun = process.env.DRY_RUN === 'true';
+
+            // List *all* runs in this repository, including other branches.
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              { owner, repo, per_page: 100 },
+            );
+            const grouped = new Map();
+            for (const run of runs) {
+              const group = grouped.get(run.workflow_id) ?? [];
+              group.push(run);
+              grouped.set(run.workflow_id, group);
+            }
+
+            let kept = 0;
+            let deleted = 0;
+            let skippedActive = 0;
+            for (const [workflowId, history] of grouped) {
+              history.sort((a, b) =>
+                Date.parse(b.created_at) - Date.parse(a.created_at) ||
+                b.run_number - a.run_number ||
+                b.id - a.id
+              );
+
+              const retained = history.slice(0, keepCount);
+              kept += retained.length;
+              core.info(
+                `Workflow ${workflowId}: ${history.length} runs, retaining ${retained.length} newest.`,
+              );
+
+              for (const run of history.slice(keepCount)) {
+                // Never interrupt an active run, including this cleanup job.
+                if (run.status !== 'completed' || run.id === context.runId) {
+                  skippedActive++;
+                  continue;
+                }
+
+                if (dryRun) {
+                  core.info(`Would delete ${run.name} #${run.run_number} (${run.id}).`);
+                  continue;
+                }
+
+                try {
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner, repo, run_id: run.id,
+                  });
+                  deleted++;
+                } catch (error) {
+                  // Another cleanup could have removed the run already.
+                  if (error.status !== 404) throw error;
+                }
+
+                // Pace destructive API calls to avoid GitHub secondary rate limits.
+                await new Promise(resolve => setTimeout(resolve, 750));
+              }
+            }
+
+            core.summary
+              .addHeading('Workflow run retention')
+              .addRaw(`Workflows checked: ${grouped.size}\\n`)
+              .addRaw(`Runs kept in newest-three slots: ${kept}\\n`)
+              .addRaw(`Active older runs left untouched: ${skippedActive}\\n`)
+              .addRaw(dryRun
+                ? 'Dry run: no runs deleted.'
+                : `Older completed runs deleted: ${deleted}`)
+              .write();
